@@ -56,6 +56,7 @@ impl<S, ReqBody, ResBody> Service<Request<ReqBody>> for Route<S>
     }
 
     fn call(&mut self, req: Request<ReqBody>) -> Self::Future {
+        println!("route layer");
         ResponseFuture {
             inner: self.inner.call(req),
         }
@@ -77,7 +78,6 @@ impl<F, B, E> Future for ResponseFuture<F>
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.project();
-        println!("route layer");
         let mut response = futures_core::ready!(this.inner.poll(cx)?);
         Poll::Ready(Ok(response))
     }
