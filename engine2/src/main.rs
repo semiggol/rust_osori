@@ -1,16 +1,14 @@
 mod middleware;
 mod tls;
+mod admin;
 
 use hyper::{Body, Client, Error, Server};
 
-use std::env;
-use hyper::server::conn::AddrIncoming;
 use futures::join;
 use http::Request;
 use tower::make::Shared;
 use tower::ServiceBuilder;
 use middleware::route::RouteLayer;
-use tls::tls_acceptor::{ TlsAcceptor, make_tls_config };
 use tls::tls_connector::make_http_or_https_client;
 
 
@@ -18,6 +16,14 @@ const API_SAMPLE_DOMAIN: &'static str = "https://httpbin.org";
 
 #[tokio::main]
 async fn main() {
+    // register to admin
+  if let Err(e)  = admin::register::register_to_admin().await {
+    println!("error occured!{}", e);
+  } else {
+    println!("Success to register!");
+  }
+
+
     // proxy_client for clone()
     let client_main = make_http_or_https_client();
 
