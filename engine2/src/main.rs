@@ -16,9 +16,10 @@ const API_SAMPLE_DOMAIN: &'static str = "https://httpbin.org";
 
 #[tokio::main]
 async fn main() {
-    // register to admin
+  // register to admin
   if let Err(e)  = admin::register::register_to_admin().await {
-    println!("error occured!{}", e);
+    println!("error occurred!{}", e);
+    std::process::exit(-1);
   } else {
     println!("Success to register!");
   }
