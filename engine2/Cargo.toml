@@ -24,7 +24,10 @@ tower = { version = "0.4.12", features = ["full"] }
 tower-layer = "0.3.1"
 tower-service = "0.3.1"
 futures-core = "0.3.21"
-cpu-monitor = "0.1.0"
 sysinfo = "0.23.12"
 num_cpus = "1.13"
 serde_json = "1.0"
+
+[target.'cfg(any(target_os = "linux", target_os = "windows"))'.dependencies]
+cpu-monitor = "0.1.0"
+

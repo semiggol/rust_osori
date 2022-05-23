@@ -20,6 +20,7 @@ pub fn poll_to_admin(client: Client<HttpConnector>, v: Value){
 }
 
 fn make_poll_msg(/*id: &str*/)/* -> &str*/{
+  println!("polling from admin...");
   let msg = r#"{
 	"id": "",
     "errorCode": []

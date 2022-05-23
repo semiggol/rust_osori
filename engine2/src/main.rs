@@ -1,13 +1,12 @@
 mod middleware;
 mod tls;
-mod monitor;
 mod admin;
+//#[cfg(not(target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+mod monitor;
 
 use std::io;
-use std::env;
-
-use hyper::{Body, Client, Error, Server};
-
+use hyper::{Body, Server};
 use futures::join;
 use http::Request;
 use tower::make::Shared;
@@ -15,7 +14,7 @@ use tower::ServiceBuilder;
 use middleware::route::RouteLayer;
 use tls::tls_connector::make_http_or_https_client;
 
-use sysinfo::{System, SystemExt};
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 use monitor::system::{ get_cpu_usage, get_memory_usage, get_network_usage, get_hostname, get_logical_cpus };
 
 const API_SAMPLE_DOMAIN: &'static str = "https://httpbin.org";
@@ -30,15 +29,9 @@ async fn main() {
         println!("Success to register!");
     }
 
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
     // sample: system monitoring info
     tokio::spawn(monitoring());
-
-    // register to admin
-    if let Err(e)  = admin::register::register_to_admin().await {
-        println!("error occured!{}", e);
-    } else {
-        println!("Success to register!");
-    }
 
     // proxy_client for clone()
     let client_main = make_http_or_https_client();
@@ -69,6 +62,7 @@ async fn main() {
 
 
 // ToDo: Admin will use below info
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 async fn monitoring() -> Result<(), io::Error> {
     use std::time::Duration;
     use cpu_monitor::CpuInstant;
