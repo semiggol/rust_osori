@@ -154,6 +154,7 @@ dependencies = [
  "hyper",
  "hyper-rustls",
  "log",
+ "num_cpus",
  "pin-project-lite",
  "rustls",
  "rustls-native-certs",

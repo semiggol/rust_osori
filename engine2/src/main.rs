@@ -1,29 +1,40 @@
 mod middleware;
 mod tls;
 mod monitor;
-
-use hyper::{Body, Client, Error, Server};
+mod admin;
 
 use std::io;
 use std::env;
 use hyper::server::conn::AddrIncoming;
+
+
+use hyper::{Body, Client, Error, Server};
+
 use futures::join;
 use http::Request;
 use tower::make::Shared;
 use tower::ServiceBuilder;
 use middleware::route::RouteLayer;
-use tls::tls_acceptor::{ TlsAcceptor, make_tls_config };
 use tls::tls_connector::make_http_or_https_client;
 
 use sysinfo::{System, SystemExt};
-use monitor::system::{ get_cpu_usage, get_memory_usage, get_network_usage };
+use monitor::system::{ get_cpu_usage, get_memory_usage, get_network_usage, get_hostname, get_logical_cpus };
 
 const API_SAMPLE_DOMAIN: &'static str = "https://httpbin.org";
 
 #[tokio::main]
 async fn main() {
 
+    // sample: system monitoring info
     tokio::spawn(monitoring());
+
+    // register to admin
+    if let Err(e)  = admin::register::register_to_admin().await {
+        println!("error occured!{}", e);
+    } else {
+        println!("Success to register!");
+    }
+
 
     // proxy_client for clone()
     let client_main = make_http_or_https_client();
@@ -53,6 +64,7 @@ async fn main() {
 }
 
 
+// ToDo: Admin will use below info
 async fn monitoring() -> Result<(), io::Error> {
     use std::time::Duration;
     use cpu_monitor::CpuInstant;
@@ -62,18 +74,25 @@ async fn monitoring() -> Result<(), io::Error> {
     let mut my_system = System::new_all();
     my_system.refresh_all();
 
+    // hostname
+    let hostname = get_hostname(&my_system);
+    
+    // logical cpu count
+    let cpus = get_logical_cpus();
+    println!("===> hostname: {}, cpus: {}", hostname, cpus);
+
     loop {
         println!("----------------------for admin (5 sleep)-----------------------");
-        // 1. memory usage
+        // memory usage
         let (memory_usage, memory_total) = get_memory_usage(&my_system);
         println!("memory usage = {}/{} KB", memory_usage, memory_total);
         
-        // 2. network usage
+        // network usage
         let (network_in, network_out) = get_network_usage(&my_system);
         println!("network usage = {}/{} KB", network_in, network_out);
 
-        // 3. cpu usage
-        let (end, cpu_usage) = get_cpu_usage(start).unwrap();
+        // cpu usage
+        let (end, cpu_usage) = get_cpu_usage(start)?;
         println!("cpu usage = {:.0} %", cpu_usage);
         start = end;
 
