@@ -17,10 +17,10 @@ pub async fn register_to_admin() -> Result<(), String>{
   }"#;
 
   let req = Request::builder()
-    .method(Method::POST)
-    .uri("http://118.67.135.216:5581/register")
-    .header("content-type", "application/json")
-    .body(Body::from(msg)).unwrap();
+      .method(Method::POST)
+      .uri("http://118.67.135.216:5581/register")
+      .header("content-type", "application/json")
+      .body(Body::from(msg)).unwrap();
 
   let client = Client::new();
 

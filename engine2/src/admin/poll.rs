@@ -14,18 +14,15 @@ pub fn poll_to_admin(client: Client<HttpConnector>, v: Value){
     loop {
       interval.tick().await;
       make_poll_msg();
-   //   send_poll_msg(client);
+      //   send_poll_msg(client);
     }
   });
 }
 
 fn make_poll_msg(/*id: &str*/)/* -> &str*/{
   let msg = r#"{
-	  "id": "",
+	"id": "",
     "errorCode": []
   }"#;
 
-  let name = "rust";
-  let test = format!("Hi, {}", name);
-  println!("hello, {}", test);
 }
