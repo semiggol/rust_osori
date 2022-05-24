@@ -1,8 +1,6 @@
 mod middleware;
 mod tls;
 mod admin;
-//#[cfg(not(target_os = "macos"))]
-#[cfg(any(target_os = "linux", target_os = "windows"))]
 mod monitor;
 
 use std::io;
@@ -14,7 +12,6 @@ use tower::ServiceBuilder;
 use middleware::route::RouteLayer;
 use tls::tls_connector::make_http_or_https_client;
 
-#[cfg(any(target_os = "linux", target_os = "windows"))]
 use monitor::system::{ get_cpu_usage, get_memory_usage, get_network_usage, get_hostname, get_logical_cpus };
 
 const API_SAMPLE_DOMAIN: &'static str = "https://httpbin.org";
@@ -29,7 +26,6 @@ async fn main() {
         println!("Success to register!");
     }
 
-    #[cfg(any(target_os = "linux", target_os = "windows"))]
     // sample: system monitoring info
     tokio::spawn(monitoring());
 
@@ -62,13 +58,11 @@ async fn main() {
 
 
 // ToDo: Admin will use below info
-#[cfg(any(target_os = "linux", target_os = "windows"))]
 async fn monitoring() -> Result<(), io::Error> {
     use std::time::Duration;
-    use cpu_monitor::CpuInstant;
+    use sysinfo::{ System, SystemExt };
 
     // monitoring info
-    let mut start = CpuInstant::now()?;
     let mut my_system = System::new_all();
     my_system.refresh_all();
 
@@ -76,7 +70,7 @@ async fn monitoring() -> Result<(), io::Error> {
     let hostname = get_hostname(&my_system);
     
     // logical cpu count
-    let cpus = get_logical_cpus();
+    let cpus = get_logical_cpus(&my_system);
     println!("===> hostname: {}, cpus: {}", hostname, cpus);
 
     loop {
@@ -90,11 +84,13 @@ async fn monitoring() -> Result<(), io::Error> {
         println!("network usage = {}/{} KB", network_in, network_out);
 
         // cpu usage
-        let (end, cpu_usage) = get_cpu_usage(start)?;
-        println!("cpu usage = {:.0} %", cpu_usage);
-        start = end;
+        let cpu_usage = get_cpu_usage(&my_system);
+        println!("cpu usage = {} %", cpu_usage);
 
+        // refresh
         my_system.refresh_all();
+
+        // sleep 5 seconds.
         std::thread::sleep(Duration::from_millis(5000));
     }
 }

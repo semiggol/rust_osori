@@ -1,6 +1,4 @@
-use std::io;
-use cpu_monitor::CpuInstant;
-use sysinfo::{ System, SystemExt, NetworkExt };
+use sysinfo::{ System, SystemExt, NetworkExt, ProcessorExt };
 
 /// (used_memory, total_memory) KB
 pub fn get_memory_usage(s: &System)-> (u64, u64) {
@@ -27,14 +25,9 @@ pub fn get_network_usage(s: &System)-> (u64, u64) {
     (network_in, network_out)
 }
 
-/// (end CpuInstant, used_cpu) KB
-pub fn get_cpu_usage(start: CpuInstant) -> Result<(CpuInstant, f64), io::Error> {
-    let end = CpuInstant::now()?;
-    let duration = end - start;
-    let usage = duration.non_idle() * 100.;
-    //println!("cpu: {:.0}%", usage);
-
-    Ok((end, usage))
+/// used cpu % since the last refresh
+pub fn get_cpu_usage(s: &System) -> f32 {
+    s.global_processor_info().cpu_usage()
 }
 
 /// hostname
@@ -43,6 +36,6 @@ pub fn get_hostname(s: &System) -> String {
 }
 
 // logical cpu count
-pub fn get_logical_cpus() -> usize {
-    num_cpus::get()
+pub fn get_logical_cpus(s: &System) -> usize {
+    s.processors().len()
 }

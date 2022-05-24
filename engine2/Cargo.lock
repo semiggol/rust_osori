@@ -73,16 +73,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5827cebf4670468b8772dd191856768aedcb1b0278a04f989f7766351917b9dc"
 
 [[package]]
-name = "cpu-monitor"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "371ccaa6693d0832f471c8bc479c9565b2fa47b4e12a8f39c18929b3cb969afa"
-dependencies = [
- "linux_proc",
- "winapi",
-]
-
-[[package]]
 name = "crc32fast"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -146,7 +136,6 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 name = "engine2"
 version = "0.1.0"
 dependencies = [
- "cpu-monitor",
  "futures",
  "futures-core",
  "futures-util",
@@ -154,7 +143,6 @@ dependencies = [
  "hyper",
  "hyper-rustls",
  "log",
- "num_cpus",
  "pin-project-lite",
  "rustls",
  "rustls-native-certs",
@@ -444,12 +432,6 @@ name = "libc"
 version = "0.2.126"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "349d5a591cd28b49e1d1037471617a32ddcda5731b99419008085f72d5a53836"
-
-[[package]]
-name = "linux_proc"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b28d590ab488f1014d856b45b55eb16afb4c401352e5e9fd3f9f67582ac3c86"
 
 [[package]]
 name = "lock_api"
