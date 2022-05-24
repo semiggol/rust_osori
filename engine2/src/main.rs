@@ -10,6 +10,7 @@ use http::Request;
 use tower::make::Shared;
 use tower::ServiceBuilder;
 use middleware::route::RouteLayer;
+use middleware::access_log::{AccessLogLayer, AccessLogRequestBody};
 use tls::tls_connector::make_http_or_https_client;
 
 use monitor::system::{ get_cpu_usage, get_memory_usage, get_network_usage, get_hostname, get_logical_cpus };
@@ -38,10 +39,11 @@ async fn main() {
 
     let service = ServiceBuilder::new()
         .layer(RouteLayer::new())
-        .service_fn(move |mut req: Request<Body>| {
+        .layer(AccessLogLayer::new())
+        .service_fn(move |mut req: Request<AccessLogRequestBody<Body>>| {
             println!("proxy!, {}", req.uri());      
             *req.uri_mut() = API_SAMPLE_DOMAIN.parse().unwrap();
-            client.request(req)
+            client.request(req.map(|inner| inner.inner))
         });
 
     // http server

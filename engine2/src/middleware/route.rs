@@ -1,5 +1,5 @@
 use http::{Request, Response};
-use pin_project_lite::pin_project;
+use pin_project::pin_project;
 use std::{
     future::Future,
     pin::Pin,
@@ -63,11 +63,10 @@ impl<S, ReqBody, ResBody> Service<Request<ReqBody>> for Route<S>
     }
 }
 
-pin_project! {
-    pub struct ResponseFuture<F> {
-        #[pin]
-        inner: F,
-    }
+#[pin_project]
+pub struct ResponseFuture<F> {
+    #[pin]
+    inner: F,
 }
 
 impl<F, B, E> Future for ResponseFuture<F>
