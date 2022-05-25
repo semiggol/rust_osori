@@ -13,7 +13,18 @@ use middleware::route::RouteLayer;
 use middleware::access_log::{AccessLogLayer, AccessLogRequestBody};
 use tls::tls_connector::make_http_or_https_client;
 
+// monitoring for system
 use monitor::system::{ get_cpu_usage, get_memory_usage, get_network_usage, get_hostname, get_logical_cpus };
+use std::time::Duration;
+
+// store for api
+use lazy_static::lazy_static;
+use dashmap::DashMap;
+use admin::apis;
+
+lazy_static! {
+    static ref APIS_MAP: DashMap<String, apis::Apis> = DashMap::new();
+}
 
 const API_SAMPLE_DOMAIN: &'static str = "https://httpbin.org";
 
@@ -22,14 +33,18 @@ async fn main() {
     // register to admin
     if let Err(e)  = admin::register::register_to_admin().await {
         println!("error occurred!{}", e);
-        std::process::exit(-1);
+        //std::process::exit(-1);
     } else {
         println!("Success to register!");
     }
 
+    // test for global variable: dashmap
+    tokio::spawn(test_insert_dashmap()); // insert()
+    tokio::spawn(test_get_dashmap()); // get() by other thread
+
     // sample: system monitoring info
     tokio::spawn(monitoring());
-
+    
     // proxy_client for clone()
     let client_main = make_http_or_https_client();
     let client = client_main.clone();
@@ -61,7 +76,6 @@ async fn main() {
 
 // ToDo: Admin will use below info
 async fn monitoring() -> Result<(), io::Error> {
-    use std::time::Duration;
     use sysinfo::{ System, SystemExt };
 
     // monitoring info
@@ -94,5 +108,49 @@ async fn monitoring() -> Result<(), io::Error> {
 
         // sleep 5 seconds.
         std::thread::sleep(Duration::from_millis(5000));
+    }
+}
+
+
+async fn test_insert_dashmap() {
+    loop {
+        let api1 = apis::set_sample_apis1();
+        let key = api1.get_key();
+        APIS_MAP.insert(key, api1);
+
+        let api2 = apis::set_sample_apis2();
+        let key = api2.get_key();
+        APIS_MAP.insert(key, api2);
+
+        // sleep 2 seconds.
+        std::thread::sleep(Duration::from_millis(2000));
+        APIS_MAP.clear();
+        std::thread::sleep(Duration::from_millis(2000));
+    }
+}
+
+async fn test_get_dashmap() {
+    loop {
+        println!("===============test dashmap api ");
+        match APIS_MAP.get("/v1/test") {
+            Some(api) => {
+                println!("test api > {:?}", api.clone());
+            },
+            None => {
+                println!("test api > test Not Found");
+            }
+        };
+
+        match APIS_MAP.get("/v2/google") {
+            Some(api) => {
+                println!("test api > {:?}", api.clone());
+            },
+            None => {
+                println!("test api > google Not Found");
+            }
+        };
+        
+        // sleep 0.5 seconds.
+        std::thread::sleep(Duration::from_millis(500));
     }
 }
