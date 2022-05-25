@@ -22,6 +22,7 @@ use lazy_static::lazy_static;
 use dashmap::DashMap;
 use admin::apis;
 
+// global variable -> APIS_MAP
 lazy_static! {
     static ref APIS_MAP: DashMap<String, apis::Apis> = DashMap::new();
 }
@@ -114,17 +115,19 @@ async fn monitoring() -> Result<(), io::Error> {
 
 async fn test_insert_dashmap() {
     loop {
-        let api1 = apis::set_sample_apis1();
+        let api1 = apis::make_sample_api1();
         let key = api1.get_key();
         APIS_MAP.insert(key, api1);
 
-        let api2 = apis::set_sample_apis2();
+        let api2 = apis::make_sample_api2();
         let key = api2.get_key();
         APIS_MAP.insert(key, api2);
 
         // sleep 2 seconds.
         std::thread::sleep(Duration::from_millis(2000));
+        // remove data from the map
         APIS_MAP.clear();
+        // sleep 2 seconds.
         std::thread::sleep(Duration::from_millis(2000));
     }
 }
