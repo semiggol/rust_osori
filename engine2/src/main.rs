@@ -3,7 +3,6 @@ mod tls;
 mod admin;
 mod monitor;
 
-use std::io;
 use hyper::{Body, Server};
 use futures::join;
 use http::Request;
@@ -13,11 +12,8 @@ use middleware::route::RouteLayer;
 use middleware::access_log::{AccessLogLayer, AccessLogRequestBody};
 use tls::tls_connector::make_http_or_https_client;
 
-// monitoring for system
-use monitor::system::{ get_cpu_usage, get_memory_usage, get_network_usage, get_hostname, get_logical_cpus };
-use std::time::Duration;
-
 // store for api
+use std::time::Duration;
 use lazy_static::lazy_static;
 use dashmap::DashMap;
 use admin::apis;
@@ -33,7 +29,7 @@ const API_SAMPLE_DOMAIN: &'static str = "https://httpbin.org";
 async fn main() {
     // register to admin
     if let Err(e)  = admin::register::register_to_admin().await {
-        println!("error occurred!{}", e);
+        println!("error occurred: {}", e);
         //std::process::exit(-1);
     } else {
         println!("Success to register!");
@@ -43,9 +39,6 @@ async fn main() {
     tokio::spawn(test_insert_dashmap()); // insert()
     tokio::spawn(test_get_dashmap()); // get() by other thread
 
-    // sample: system monitoring info
-    tokio::spawn(monitoring());
-    
     // proxy_client for clone()
     let client_main = make_http_or_https_client();
     let client = client_main.clone();
@@ -73,45 +66,6 @@ async fn main() {
         eprintln!("server error: {}", e);
     }
 }
-
-
-// ToDo: Admin will use below info
-async fn monitoring() -> Result<(), io::Error> {
-    use sysinfo::{ System, SystemExt };
-
-    // monitoring info
-    let mut my_system = System::new_all();
-    my_system.refresh_all();
-
-    // hostname
-    let hostname = get_hostname(&my_system);
-    
-    // logical cpu count
-    let cpus = get_logical_cpus(&my_system);
-    println!("===> hostname: {}, cpus: {}", hostname, cpus);
-
-    loop {
-        println!("----------------------for admin (5 sleep)-----------------------");
-        // memory usage
-        let (memory_usage, memory_total) = get_memory_usage(&my_system);
-        println!("memory usage = {}/{} KB", memory_usage, memory_total);
-        
-        // network usage
-        let (network_in, network_out) = get_network_usage(&my_system);
-        println!("network usage = {}/{} KB", network_in, network_out);
-
-        // cpu usage
-        let cpu_usage = get_cpu_usage(&my_system);
-        println!("cpu usage = {} %", cpu_usage);
-
-        // refresh
-        my_system.refresh_all();
-
-        // sleep 5 seconds.
-        std::thread::sleep(Duration::from_millis(5000));
-    }
-}
-
 
 async fn test_insert_dashmap() {
     loop {

@@ -1,23 +1,29 @@
-use hyper::{Client, Body, Method, Request, StatusCode, body};
 use super::poll;
+use super::super::monitor;
+
+use monitor::system::{ get_hostname, get_logical_cpus };
+use hyper::{Client, Body, Method, Request, StatusCode, body};
+use serde_json::json;
 
 pub async fn register_to_admin() -> Result<(), String>{
+  let (hostname, cpus) = get_system_info();
+
   // 1. connect and send register msg to admin
-  let msg = r#"{
+  let msg = json!({
 	"id": "",
-	"engineName": "macos",
-    "groupName": "defaultGroup",
-    "hostName": "MyHost",
+	"engineName": "",
+    "groupName": "",
+    "hostName": hostname,
     "vsersion": "2.1",
-    "cpu": 4,
+    "cpu": cpus,
     "errorMessage": ""
-  }"#;
+  });
 
   let req = Request::builder()
       .method(Method::POST)
       .uri("http://118.67.135.216:5581/register")
       .header("content-type", "application/json")
-      .body(Body::from(msg)).unwrap();
+      .body(Body::from(msg.to_string())).unwrap();
 
   let client = Client::new();
 
@@ -39,4 +45,20 @@ pub async fn register_to_admin() -> Result<(), String>{
   poll::poll_to_admin(client, info);
 
   Ok(())
+}
+
+fn get_system_info() -> (String, usize){
+  use sysinfo::{ System, SystemExt };
+
+  // monitoring info
+  let mut my_system = System::new_all();
+  my_system.refresh_all();
+
+  // hostname
+  let hostname = get_hostname(&my_system);
+
+  // logical cpu count
+  let cpus = get_logical_cpus(&my_system);
+
+  (hostname, cpus)
 }
