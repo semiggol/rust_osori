@@ -25,8 +25,9 @@ tower-layer = "0.3.1"
 tower-service = "0.3.1"
 futures-core = "0.3.21"
 sysinfo = "0.23.12"
-serde_json = { version = "1.0", features = ["arbitrary_precision"]}
+serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 http-body = "0.4.5"
 bytes = "1.1.0"
 dashmap = "5.3.3"
 lazy_static = "1.4.0"
+clap = { version = "3.1", features = ["derive"] }

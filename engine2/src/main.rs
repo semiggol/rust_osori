@@ -2,6 +2,7 @@ mod middleware;
 mod tls;
 mod admin;
 mod monitor;
+mod config;
 
 use hyper::{Body, Server};
 use futures::join;
@@ -18,6 +19,7 @@ use lazy_static::lazy_static;
 use dashmap::DashMap;
 use admin::apis;
 
+
 // global variable -> APIS_MAP
 lazy_static! {
     static ref APIS_MAP: DashMap<String, apis::Apis> = DashMap::new();
@@ -27,6 +29,8 @@ const API_SAMPLE_DOMAIN: &'static str = "https://httpbin.org";
 
 #[tokio::main]
 async fn main() {
+    config::parse_args();
+
     // register to admin
     if let Err(e)  = admin::register::register_to_admin().await {
         println!("error occurred: {}", e);
