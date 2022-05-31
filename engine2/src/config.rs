@@ -1,5 +1,6 @@
 use std::net::{IpAddr, SocketAddr};
 use std::ops::RangeInclusive;
+use std::env;
 use clap::Parser;
 
 #[derive(Parser)]
@@ -53,7 +54,7 @@ fn signal_in_rage(s: &str) -> Result<String, String> {
     Err(format!("Invalid signal option"))
 }
 
-pub fn parse_args() {
+pub fn parse() -> Result<systemConfig, String>{
     let args = Args::parse();
 
     if args.verbose_mode {
@@ -61,13 +62,55 @@ pub fn parse_args() {
         println!("Verbose mode is not yet implemented.");
     }
 
-    if let Some(admin_address) = args.admin_address {
-       println!("admin_address = {}", admin_address);
-    }
-    else {
-        // get env OSORI_ADMIN
-        // error
-    }
-    //(args.admin_address, args.engine_name, args.group_name, args.health_check_timeout)
+    // get admin server address
+    let admin_address = match args.admin_address {
+        Some(address) => address,
+        None => {
+            if let Ok(address) = env::var("OSORI_ADMIN") {
+                if let Err(e) = validate_ip_address(address.as_str()) {
+                    return Err(String::from("Address of admin server is not valid (ex. 127.0.0.1:5581). check ENV OSORI_ADMIN"));
+                }
+                address
+            }
+            else {
+                return Err(String::from("Address of admin server is required (ex. 127.0.0.1:5581). use ENV OSORI_ADMIN or -a option"));
+            }
+        }
+    };
+
+    // get engine name
+    let engine_name = match args.engine_name{
+        Some(name) => Some(name),
+        None => {
+            if let Ok(name) = env::var("OSORI_ENGINE") {
+               Some(name)
+            }
+            else {
+                None
+            }
+        }
+    };
+
+    // get group name
+    let group_name = match args.group_name{
+        Some(name) => Some(name),
+        None => {
+            if let Ok(name) = env::var("OSORI_GROUP") {
+                Some(name)
+            }
+            else {
+                None
+            }
+        }
+    };
+
+    Ok(systemConfig{admin_address, engine_name, group_name})
+}
+
+
+pub struct systemConfig {
+    pub admin_address: String,
+    pub engine_name: Option<String>,
+    pub group_name: Option<String>
 }
 

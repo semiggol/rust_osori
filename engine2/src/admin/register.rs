@@ -1,29 +1,17 @@
 use super::poll;
-use super::super::monitor;
-
+use crate::monitor;
+use crate::config::systemConfig;
 use monitor::system::{ get_hostname, get_logical_cpus };
 use hyper::{Client, Body, Method, Request, StatusCode, body};
 use serde_json::json;
 
-pub async fn register_to_admin() -> Result<(), String>{
-  let (hostname, cpus) = get_system_info();
-
+pub async fn register_to_admin(config: systemConfig) -> Result<(), String>{
   // 1. connect and send register msg to admin
-  let msg = json!({
-	"id": "",
-	"engineName": "",
-    "groupName": "",
-    "hostName": hostname,
-    "vsersion": "2.1",
-    "cpu": cpus,
-    "errorMessage": ""
-  });
-
   let req = Request::builder()
       .method(Method::POST)
-      .uri("http://118.67.135.216:5581/register")
+      .uri(format!("http://{}/register", config.admin_address))
       .header("content-type", "application/json")
-      .body(Body::from(msg.to_string())).unwrap();
+      .body(Body::from(make_msg(config))).unwrap();
 
   let client = Client::new();
 
@@ -62,3 +50,23 @@ fn get_system_info() -> (String, usize){
 
   (hostname, cpus)
 }
+
+fn make_msg(config: systemConfig) -> String{
+  let (host_name, cpus) = get_system_info();
+
+  let engine_name = config.engine_name.unwrap_or_else(||host_name.clone());
+  let group_name = config.group_name.unwrap_or_default();
+
+  let msg = json!({
+	"id": "",
+	"engineName": engine_name,
+    "groupName": group_name,
+    "hostName": host_name,
+    "vsersion": "2.1",
+    "cpu": cpus,
+    "errorMessage": ""
+  });
+
+  msg.to_string()
+}
+

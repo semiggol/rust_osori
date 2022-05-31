@@ -29,10 +29,16 @@ const API_SAMPLE_DOMAIN: &'static str = "https://httpbin.org";
 
 #[tokio::main]
 async fn main() {
-    config::parse_args();
+    let config = match config::parse() {
+        Ok(config) => config,
+        Err(e) => {
+            println!("error occurred: {}", e);
+            std::process::exit(-1);
+        }
+    };
 
     // register to admin
-    if let Err(e)  = admin::register::register_to_admin().await {
+    if let Err(e)  = admin::register::register_to_admin(config).await {
         println!("error occurred: {}", e);
         //std::process::exit(-1);
     } else {
