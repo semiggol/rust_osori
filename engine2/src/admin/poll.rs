@@ -5,19 +5,45 @@ use std::time::{Duration, UNIX_EPOCH};
 use hyper::client::HttpConnector;
 use serde_json::Value;
 use serde_json::json;
-use hyper::{Client, Request, Method, Body, body, StatusCode};
+use hyper::{ Client, Request, Method, Body, body, StatusCode };
 use std::time::SystemTime;
-use monitor::system::{ get_memory_usage, get_network_usage, get_cpu_usage};
+use monitor::system::{ get_memory_usage, get_network_usage, get_cpu_usage };
+use serde::{ Serialize, Deserialize };
 
-pub fn poll_to_admin(client: Client<HttpConnector>, info: Value){
+#[derive(Serialize, Deserialize)]
+struct PollMessage {
+    id: String,
+    time: u128,
+    totalMemory: u64,
+    usedMemory: u64,
+    usedCpu: f32,
+    usedNetworkTrafficIn: u64,
+    usedNetworkTrafficOut: u64,
+    clientCount: usize,
+    requestCount: usize,
+    responseCount: usize,
+    responseTime: usize,
+    responseStatus: Vec<usize>,
+    activeRequests: Vec<ActiveRequest>,
+    errorMessage: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct ActiveRequest {
+    apiName: String,
+    apiVersion: usize,
+    elapsedTime: usize,
+}
+
+pub fn handle(client: Client<HttpConnector>, info: Value){
     task::spawn( async move {
         let mut interval = time::interval(Duration::from_secs(5));
         let id = info["id"].as_str().unwrap();
         loop {
             interval.tick().await;
 
-            let msg = make_poll_msg(id);
-            send_poll_msg(msg, client.clone()).await.unwrap();
+            let message = make_poll_message(id);
+            send_poll_msg(message, client.clone()).await.unwrap();
         }
     });
 }
@@ -54,7 +80,7 @@ fn get_monitoring_info() -> MonitoringInfo {
     }
 }
 
-fn make_poll_msg(id: &str) -> Request<Body>{
+fn make_poll_message(id: &str) -> String {
     // get the information needed to make a poll message
     let sys_time = match SystemTime::now().duration_since(UNIX_EPOCH) {
         Ok(n) => n.as_millis(),
@@ -64,31 +90,33 @@ fn make_poll_msg(id: &str) -> Request<Body>{
     };
     let monitoring_info = get_monitoring_info();
 
-    let body = json!({
-	  "id": id,
-      "time": sys_time,
-      "totalMemory": monitoring_info.memory_usage_total,
-      "usedMemory": monitoring_info.memory_usage,
-      "usedCpu": monitoring_info.cpu_usage,
-      "usedNetworkTrafficIn": monitoring_info.network_usage_in,
-      "usedNetworkTrafficOut": monitoring_info.network_usage_out,
-      "clientCount": 0,
-      "requestCount": 0,
-      "responseCount": 0,
-      "responseTime": 0,
-      "responseStatus": [0, 0, 0, 0, 0],
-      "activeRequests": [] ,
-      "errorMessage": ""
-    });
+    let message = PollMessage {
+        id: id.to_string(),
+        time: sys_time,
+        totalMemory: monitoring_info.memory_usage_total,
+        usedMemory: monitoring_info.memory_usage,
+        usedCpu: monitoring_info.cpu_usage,
+        usedNetworkTrafficIn: monitoring_info.network_usage_in,
+        usedNetworkTrafficOut: monitoring_info.network_usage_out,
+        clientCount: 0,
+        requestCount: 0,
+        responseCount: 0,
+        responseTime: 0,
+        responseStatus: vec![0, 0, 0, 0, 0],
+        activeRequests: vec![],
+        errorMessage: String::from(""),
+    };
 
-    Request::builder()
+    serde_json::to_string(&message).unwrap()
+}
+
+async fn send_poll_msg(body: String, client: Client<HttpConnector>) -> Result<(), String> {
+    let req = Request::builder()
         .method(Method::POST)
         .uri("http://118.67.135.216:5581/poll")
         .header("content-type", "application/json")
-        .body(Body::from(body.to_string())).unwrap()
-}
+        .body(Body::from(body)).unwrap();
 
-async fn send_poll_msg(req: Request<Body>, client: Client<HttpConnector>) -> Result<(), String> {
     let resp = match client.request(req).await {
         Ok(resp)  => resp,
         Err(e) => {

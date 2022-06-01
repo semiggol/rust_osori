@@ -29,9 +29,9 @@ async fn main() {
     };
 
     // register to admin
-    if let Err(e)  = admin::register::register_to_admin(config).await {
+    if let Err(e)  = admin::register::handle(config).await {
         println!("error occurred: {}", e);
-        //std::process::exit(-1);
+        std::process::exit(-1);
     } else {
         println!("Success to register!");
     }
