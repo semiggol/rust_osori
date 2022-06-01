@@ -13,17 +13,8 @@ use middleware::route::RouteLayer;
 use middleware::access_log::{AccessLogLayer, AccessLogRequestBody};
 use tls::tls_connector::make_http_or_https_client;
 
-// store for api
-use std::time::Duration;
-use lazy_static::lazy_static;
-use dashmap::DashMap;
+// for api map
 use admin::apis;
-
-
-// global variable -> APIS_MAP
-lazy_static! {
-    static ref APIS_MAP: DashMap<String, apis::Apis> = DashMap::new();
-}
 
 const API_SAMPLE_DOMAIN: &'static str = "https://httpbin.org";
 
@@ -45,9 +36,9 @@ async fn main() {
         println!("Success to register!");
     }
 
-    // test for global variable: dashmap
-    tokio::spawn(test_insert_dashmap()); // insert()
-    tokio::spawn(test_get_dashmap()); // get() by other thread
+    // test for global variable
+    tokio::spawn(apis::test_update_apis());
+    tokio::spawn(apis::test_find_apis());
 
     // proxy_client for clone()
     let client_main = make_http_or_https_client();
@@ -74,50 +65,5 @@ async fn main() {
 
     if let Err(e) = http_server.await {
         eprintln!("server error: {}", e);
-    }
-}
-
-async fn test_insert_dashmap() {
-    loop {
-        let api1 = apis::make_sample_api1();
-        let key = api1.get_key();
-        APIS_MAP.insert(key, api1);
-
-        let api2 = apis::make_sample_api2();
-        let key = api2.get_key();
-        APIS_MAP.insert(key, api2);
-
-        // sleep 2 seconds.
-        std::thread::sleep(Duration::from_millis(2000));
-        // remove data from the map
-        APIS_MAP.clear();
-        // sleep 2 seconds.
-        std::thread::sleep(Duration::from_millis(2000));
-    }
-}
-
-async fn test_get_dashmap() {
-    loop {
-        println!("===============test dashmap api ");
-        match APIS_MAP.get("/v1/test") {
-            Some(api) => {
-                println!("test api > {:?}", api.clone());
-            },
-            None => {
-                println!("test api > test Not Found");
-            }
-        };
-
-        match APIS_MAP.get("/v2/google") {
-            Some(api) => {
-                println!("test api > {:?}", api.clone());
-            },
-            None => {
-                println!("test api > google Not Found");
-            }
-        };
-        
-        // sleep 0.5 seconds.
-        std::thread::sleep(Duration::from_millis(500));
     }
 }
