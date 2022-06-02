@@ -1,29 +1,34 @@
 use super::poll;
 use crate::monitor;
-use crate::config::systemConfig;
+use crate::config::{ system_config, api };
 use monitor::system::{ get_hostname, get_logical_cpus };
 use hyper::{ Client, Body, Method, Request, StatusCode, body };
-use serde_json::json;
 use serde::{ Serialize, Deserialize };
+use crate::config::args;
 
 #[derive(Serialize, Deserialize)]
 struct RegisterRequest {
   id: String,
-  engineName: String,
-  groupName: String,
-  hostName: String,
+  #[serde(rename = "engineName")]
+  engine_name: String,
+  #[serde(rename = "groupName")]
+  group_name: String,
+  #[serde(rename = "hostName")]
+  host_name: String,
   version: String,
   cpu: String,
-  errorMessage: String,
+  #[serde(rename = "errorMessage")]
+  error_message: String,
 }
 
-/*
 #[derive(Serialize, Deserialize)]
-struct RegisterResponse {
+pub struct RegisterResponse {
+  pub api: Vec<api::Api>,
+  pub config: system_config::SystemConfig,
+  pub id: String,
 }
-*/
 
-pub async fn handle(config: systemConfig) -> Result<(), String>{
+pub async fn handle(config: args::SystemConfig) -> Result<(), String>{
   let uri = format!("http://{}/register", config.admin_address);
 
   let message = make_register_message(config);
@@ -49,36 +54,31 @@ pub async fn handle(config: systemConfig) -> Result<(), String>{
   }
 
   let body_bytes = body::to_bytes(resp.into_body()).await.unwrap();
-  let info: serde_json::Value = serde_json::from_slice(&body_bytes.to_vec()).unwrap();
+  let info: RegisterResponse = serde_json::from_slice(&body_bytes.to_vec()).unwrap();
 
-  println!("register msg : {:?}", info);
   // 2. start to poll to admin every 5 seconds
   poll::handle(client, info);
 
   Ok(())
 }
 
-fn make_register_message(config: systemConfig) -> String {
+fn make_register_message(config: args::SystemConfig) -> String {
   let (host_name, cpus) = get_system_info();
 
   let engine_name = config.engine_name.unwrap_or_else(||host_name.clone());
   let group_name = config.group_name.unwrap_or_default();
 
-  let msg = RegisterRequest {
+  let message = RegisterRequest {
     id: String::from(""),
-    engineName: engine_name,
-    groupName: group_name,
-    hostName: host_name,
+    engine_name,
+    group_name,
+    host_name,
     version: String::from("2.1"),
     cpu: cpus.to_string(),
-    errorMessage: String::from(""),
+    error_message: String::from(""),
   };
 
-  serde_json::to_string(&msg).unwrap()
-}
-
-fn send_register_message() {
-
+  serde_json::to_string(&message).unwrap()
 }
 
 fn get_system_info() -> (String, usize){

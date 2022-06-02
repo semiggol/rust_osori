@@ -1,4 +1,4 @@
-use std::net::{IpAddr, SocketAddr};
+use std::net::SocketAddr;
 use std::env;
 use clap::Parser;
 
@@ -36,7 +36,7 @@ struct Args {
 // check validation of arguments
 fn validate_ip_address(s: &str) -> Result<String, String>{
     match s.parse::<SocketAddr>() {
-        Ok(socket) => {
+        Ok(_socket) => {
             // can check ip address format and port number range
             return Ok(s.to_string())
         },
@@ -53,7 +53,13 @@ fn signal_in_rage(s: &str) -> Result<String, String> {
     Err(format!("Invalid signal option"))
 }
 
-pub fn parse() -> Result<systemConfig, String>{
+pub struct SystemConfig {
+    pub admin_address: String,
+    pub engine_name: Option<String>,
+    pub group_name: Option<String>
+}
+
+pub fn parse() -> Result<SystemConfig, String>{
     let args = Args::parse();
 
     if args.verbose_mode {
@@ -66,7 +72,7 @@ pub fn parse() -> Result<systemConfig, String>{
         Some(address) => address,
         None => {
             if let Ok(address) = env::var("OSORI_ADMIN") {
-                if let Err(e) = validate_ip_address(address.as_str()) {
+                if let Err(_e) = validate_ip_address(address.as_str()) {
                     return Err(String::from("Address of admin server is not valid (ex. 127.0.0.1:5581). check ENV OSORI_ADMIN"));
                 }
                 address
@@ -103,13 +109,5 @@ pub fn parse() -> Result<systemConfig, String>{
         }
     };
 
-    Ok(systemConfig{admin_address, engine_name, group_name})
+    Ok(SystemConfig{admin_address, engine_name, group_name})
 }
-
-
-pub struct systemConfig {
-    pub admin_address: String,
-    pub engine_name: Option<String>,
-    pub group_name: Option<String>
-}
-

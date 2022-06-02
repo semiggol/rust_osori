@@ -5,7 +5,6 @@ mod monitor;
 mod config;
 
 use hyper::Server;
-use http::Request;
 use tower::make::Shared;
 use tower::ServiceBuilder;
 use service::route::{ RouteLayer, dummy_route };
@@ -13,12 +12,11 @@ use service::access_log::{AccessLogLayer, AccessLogRequestBody};
 use tls::tls_connector::make_http_or_https_client;
 
 // for api map
-use admin::apis;
 use crate::service::proxy::ProxyService;
 
 #[tokio::main]
 async fn main() {
-    let config = match config::parse() {
+    let config = match config::args::parse() {
         Ok(config) => config,
         Err(e) => {
             println!("error occurred: {}", e);

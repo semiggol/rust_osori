@@ -1,44 +1,64 @@
 use crate::monitor;
-
+use crate::admin::register::{ RegisterResponse };
 use tokio::{task, time};
 use std::time::{Duration, UNIX_EPOCH};
 use hyper::client::HttpConnector;
-use serde_json::Value;
-use serde_json::json;
 use hyper::{ Client, Request, Method, Body, body, StatusCode };
 use std::time::SystemTime;
 use monitor::system::{ get_memory_usage, get_network_usage, get_cpu_usage };
 use serde::{ Serialize, Deserialize };
+use crate::config::api;
 
 #[derive(Serialize, Deserialize)]
-struct PollMessage {
+struct PollRequest {
     id: String,
     time: u128,
-    totalMemory: u64,
-    usedMemory: u64,
-    usedCpu: f32,
-    usedNetworkTrafficIn: u64,
-    usedNetworkTrafficOut: u64,
-    clientCount: usize,
-    requestCount: usize,
-    responseCount: usize,
-    responseTime: usize,
-    responseStatus: Vec<usize>,
-    activeRequests: Vec<ActiveRequest>,
-    errorMessage: String,
+    #[serde(rename = "totalMemory")]
+    total_memory: u64,
+    #[serde(rename = "usedMemory")]
+    used_memory: u64,
+    #[serde(rename = "usedCPU")]
+    used_cpu: f32,
+    #[serde(rename = "usedNetworkTrafficIn")]
+    used_network_traffic_in: u64,
+    #[serde(rename = "usedNetworkTrafficOut")]
+    used_network_traffic_out: u64,
+    #[serde(rename = "clientCount")]
+    client_count: usize,
+    #[serde(rename = "requestCount")]
+    request_count: usize,
+    #[serde(rename = "responseCount")]
+    response_count: usize,
+    #[serde(rename = "responseTime")]
+    response_time: usize, #[serde(rename = "responseStatus")]
+    response_status: Vec<usize>,
+    #[serde(rename = "activeRequests")]
+    active_requests: Vec<ActiveRequestInfo>,
+    #[serde(rename = "errorMessage")]
+    error_message: String,
 }
 
 #[derive(Serialize, Deserialize)]
-struct ActiveRequest {
-    apiName: String,
-    apiVersion: usize,
-    elapsedTime: usize,
+struct ActiveRequestInfo {
+    #[serde(rename = "apiName")]
+    api_name: String,
+    #[serde(rename = "apiVersion")]
+    api_version: usize,
+    #[serde(rename = "elapsedTime")]
+    elapsed_time: usize,
 }
 
-pub fn handle(client: Client<HttpConnector>, info: Value){
+#[derive(Serialize, Deserialize)]
+struct PollResponse {
+    action: String,
+    #[serde(default)]
+    api: Vec<api::Api>,
+}
+
+pub fn handle(client: Client<HttpConnector>, info: RegisterResponse){
     task::spawn( async move {
         let mut interval = time::interval(Duration::from_secs(5));
-        let id = info["id"].as_str().unwrap();
+        let id = info.id.as_str();
         loop {
             interval.tick().await;
 
@@ -90,21 +110,21 @@ fn make_poll_message(id: &str) -> String {
     };
     let monitoring_info = get_monitoring_info();
 
-    let message = PollMessage {
+    let message = PollRequest {
         id: id.to_string(),
         time: sys_time,
-        totalMemory: monitoring_info.memory_usage_total,
-        usedMemory: monitoring_info.memory_usage,
-        usedCpu: monitoring_info.cpu_usage,
-        usedNetworkTrafficIn: monitoring_info.network_usage_in,
-        usedNetworkTrafficOut: monitoring_info.network_usage_out,
-        clientCount: 0,
-        requestCount: 0,
-        responseCount: 0,
-        responseTime: 0,
-        responseStatus: vec![0, 0, 0, 0, 0],
-        activeRequests: vec![],
-        errorMessage: String::from(""),
+        total_memory: monitoring_info.memory_usage_total,
+        used_memory: monitoring_info.memory_usage,
+        used_cpu: monitoring_info.cpu_usage,
+        used_network_traffic_in: monitoring_info.network_usage_in,
+        used_network_traffic_out: monitoring_info.network_usage_out,
+        client_count: 0,
+        request_count: 0,
+        response_count: 0,
+        response_time: 0,
+        response_status: vec![0, 0, 0, 0, 0],
+        active_requests: vec![],
+        error_message: String::from(""),
     };
 
     serde_json::to_string(&message).unwrap()
@@ -130,9 +150,7 @@ async fn send_poll_msg(body: String, client: Client<HttpConnector>) -> Result<()
 
     let body_bytes = body::to_bytes(resp.into_body()).await.unwrap();
     if !body_bytes.is_empty() {
-        // no change
-        let info: serde_json::Value = serde_json::from_slice(&body_bytes.to_vec()).unwrap();
-        println!("value:{:?}", info);
+        let _info: PollResponse = serde_json::from_slice(&body_bytes.to_vec()).unwrap();
     }
 
     Ok(())
