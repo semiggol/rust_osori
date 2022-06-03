@@ -53,23 +53,17 @@ struct ActiveRequestInfo {
 struct PollResponse {
     action: String,
     #[serde(default)]
-    api: Vec<api::Api>,
+    api: Vec<api::DeserializedApi>,
 }
 
-pub fn handle(client: Client<HttpConnector>, info: RegisterResponse){
+pub fn handle(client: Client<HttpConnector>, id: String) {
     task::spawn( async move {
-        // get id
-        let id = info.id.as_str();
-
-        // process admin's api message: ToDo: move this code to register.rs
-        manage_api_from_admin(info.api);
-
         // interval
         let mut interval = time::interval(Duration::from_secs(5));
         loop {
             interval.tick().await;
 
-            let message = make_poll_message(id);
+            let message = make_poll_message(id.clone());
             send_poll_msg(message, client.clone()).await.unwrap();
         }
     });
@@ -107,7 +101,7 @@ fn get_monitoring_info() -> MonitoringInfo {
     }
 }
 
-fn make_poll_message(id: &str) -> String {
+fn make_poll_message(id: String) -> String {
     // get the information needed to make a poll message
     let sys_time = match SystemTime::now().duration_since(UNIX_EPOCH) {
         Ok(n) => n.as_millis(),
@@ -118,7 +112,7 @@ fn make_poll_message(id: &str) -> String {
     let monitoring_info = get_monitoring_info();
 
     let message = PollRequest {
-        id: id.to_string(),
+        id: id,
         time: sys_time,
         total_memory: monitoring_info.memory_usage_total,
         used_memory: monitoring_info.memory_usage,
@@ -167,7 +161,7 @@ async fn send_poll_msg(body: String, client: Client<HttpConnector>) -> Result<()
 ///! ToDo: add process by "action"
 fn process_admin_message(info: PollResponse) {
     if info.action.eq("api") {
-        manage_api_from_admin(info.api);
+        api::insert_apis_into_new_map(info.api);
     }
     else if info.action.eq("config") {
         // ToDo: 없어짐 ^^
@@ -178,8 +172,4 @@ fn process_admin_message(info: PollResponse) {
     else if info.action.eq("restart") {
         // ToDo:
     }
-}
-
-fn manage_api_from_admin(apis: Vec<api::Api>) {
-    api::bulk_insert_into_new_map(apis);
 }
