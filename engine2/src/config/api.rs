@@ -52,7 +52,7 @@ pub struct Api {
     #[serde(rename = "targetServers")]
     pub target_servers: Vec<String>,
     pub version: usize,
-    #[serde(default)]
+    #[serde(skip)]
     pub match_prefix: bool,
 }
 
@@ -61,6 +61,7 @@ impl Api {
         self.base_path.clone()
     }
 
+    // ToDo: match_prefix 변수에 대한 고민 필요
     pub fn fix_matchtype_and_remove_asterisk(&mut self) {
         // fix match type
         let mut len = self.base_path.len();
@@ -71,6 +72,7 @@ impl Api {
             // remove '*' in base_path
             self.base_path = self.base_path[0..len-1].to_string();
             
+            // ToDo: how to process '*'?
             len = self.target_path.len();
             path = self.target_path.as_bytes();
             if path[len-1] == b'*' {
@@ -106,7 +108,7 @@ impl Map {
         self.prefix_match.clear();
     }
 
-    // insert new api
+    // insert new api: ToDo: protocol에 사용되는 구조체와 분리 방안
     pub fn insert(&mut self, mut api: Api) {
         api.fix_matchtype_and_remove_asterisk();
         
@@ -138,8 +140,10 @@ impl Map {
         // 2. get from prefix map .. ToDo: remove '*' in base_path?
         for api in &self.prefix_match {
             // remove '*'
+            //ToDo: use eq() insted contains() // jang 
             let len = api.base_path.len();
             let prefix_path = &api.base_path[0..len-1];
+            //let prefix_uri = uri..();
             if uri.contains(prefix_path) {
                 // found
                 for api_method in api.methods.iter() {
@@ -229,7 +233,7 @@ pub async fn test_update_apis() {
             "methods": ["GET", "POST"],
             "author": "admin",
             "basePath": "/v2/naver/*",
-            "targetPath": "/*",
+            "targetPath": "/",
             "targetServers": ["http://www.naver.com:80"],
             "authType": "none",
             "cors": false,

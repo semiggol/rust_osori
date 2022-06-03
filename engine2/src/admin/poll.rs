@@ -61,7 +61,7 @@ pub fn handle(client: Client<HttpConnector>, info: RegisterResponse){
         // get id
         let id = info.id.as_str();
 
-        // process admin's api message
+        // process admin's api message: ToDo: move this code to register.rs
         manage_api_from_admin(info.api);
 
         // interval
@@ -170,7 +170,7 @@ fn process_admin_message(info: PollResponse) {
         manage_api_from_admin(info.api);
     }
     else if info.action.eq("config") {
-        // ToDo:
+        // ToDo: 없어짐 ^^
     }
     else if info.action.eq("shutdown") {
         // ToDo:
