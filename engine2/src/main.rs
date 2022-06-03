@@ -10,6 +10,7 @@ use tower::ServiceBuilder;
 use service::route::{ RouteLayer, dummy_route };
 use service::access_log::{AccessLogLayer, AccessLogRequestBody};
 use tls::tls_connector::make_http_or_https_client;
+use crate::service::cors::CorsLayer;
 
 // for api map
 use crate::service::proxy::ProxyService;
@@ -36,8 +37,9 @@ async fn main() {
     let http_addr = ([127, 0, 0, 1], 3000).into();
 
     let service = ServiceBuilder::new()
-        .layer(RouteLayer::new(dummy_route()))
         .layer(AccessLogLayer::new())
+        .layer(RouteLayer::new(dummy_route()))
+        .layer(CorsLayer)
         .service(ProxyService);
 
     // http server
