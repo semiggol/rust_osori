@@ -1,4 +1,4 @@
-use crate::monitor;
+use crate::{monitor, config};
 use crate::admin::register::{ RegisterResponse };
 use tokio::{task, time};
 use std::time::{Duration, UNIX_EPOCH};
@@ -30,7 +30,8 @@ struct PollRequest {
     #[serde(rename = "responseCount")]
     response_count: usize,
     #[serde(rename = "responseTime")]
-    response_time: usize, #[serde(rename = "responseStatus")]
+    response_time: usize, 
+    #[serde(rename = "responseStatus")]
     response_status: Vec<usize>,
     #[serde(rename = "activeRequests")]
     active_requests: Vec<ActiveRequestInfo>,
@@ -57,8 +58,14 @@ struct PollResponse {
 
 pub fn handle(client: Client<HttpConnector>, info: RegisterResponse){
     task::spawn( async move {
-        let mut interval = time::interval(Duration::from_secs(5));
+        // get id
         let id = info.id.as_str();
+
+        // process admin's api message
+        manage_api_from_admin(info.api);
+
+        // interval
+        let mut interval = time::interval(Duration::from_secs(5));
         loop {
             interval.tick().await;
 
@@ -150,8 +157,29 @@ async fn send_poll_msg(body: String, client: Client<HttpConnector>) -> Result<()
 
     let body_bytes = body::to_bytes(resp.into_body()).await.unwrap();
     if !body_bytes.is_empty() {
-        let _info: PollResponse = serde_json::from_slice(&body_bytes.to_vec()).unwrap();
+        let info: PollResponse = serde_json::from_slice(&body_bytes.to_vec()).unwrap();
+        process_admin_message(info);
     }
 
     Ok(())
+}
+
+///! ToDo: add process by "action"
+fn process_admin_message(info: PollResponse) {
+    if info.action.eq("api") {
+        manage_api_from_admin(info.api);
+    }
+    else if info.action.eq("config") {
+        // ToDo:
+    }
+    else if info.action.eq("shutdown") {
+        // ToDo:
+    }
+    else if info.action.eq("restart") {
+        // ToDo:
+    }
+}
+
+fn manage_api_from_admin(apis: Vec<api::Api>) {
+    api::bulk_insert_into_new_map(apis);
 }

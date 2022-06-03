@@ -1,6 +1,6 @@
 use super::poll;
 use crate::monitor;
-use crate::config::{ system_config, api };
+use crate::config::{ system, api };
 use monitor::system::{ get_hostname, get_logical_cpus };
 use hyper::{ Client, Body, Method, Request, StatusCode, body };
 use serde::{ Serialize, Deserialize };
@@ -24,7 +24,7 @@ struct RegisterRequest {
 #[derive(Serialize, Deserialize)]
 pub struct RegisterResponse {
   pub api: Vec<api::Api>,
-  pub config: system_config::SystemConfig,
+  pub config: system::SystemConfig,
   pub id: String,
 }
 
