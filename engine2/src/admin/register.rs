@@ -6,17 +6,14 @@ use monitor::system::{get_hostname, get_logical_cpus};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct RegisterRequest {
     id: String,
-    #[serde(rename = "engineName")]
     engine_name: String,
-    #[serde(rename = "groupName")]
     group_name: String,
-    #[serde(rename = "hostName")]
     host_name: String,
     version: String,
     cpu: String,
-    #[serde(rename = "errorMessage")]
     error_message: String,
 }
 

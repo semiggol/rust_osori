@@ -10,42 +10,29 @@ use serde::{ Serialize, Deserialize };
 use crate::config::api;
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct PollRequest {
     id: String,
     time: u128,
-    #[serde(rename = "totalMemory")]
     total_memory: u64,
-    #[serde(rename = "usedMemory")]
     used_memory: u64,
-    #[serde(rename = "usedCPU")]
     used_cpu: f32,
-    #[serde(rename = "usedNetworkTrafficIn")]
     used_network_traffic_in: u64,
-    #[serde(rename = "usedNetworkTrafficOut")]
     used_network_traffic_out: u64,
-    #[serde(rename = "clientCount")]
     client_count: usize,
-    #[serde(rename = "requestCount")]
     request_count: usize,
-    #[serde(rename = "responseCount")]
     response_count: usize,
-    #[serde(rename = "responseTime")]
-    response_time: usize, 
-    #[serde(rename = "responseStatus")]
+    response_time: usize,
     response_status: Vec<usize>,
-    #[serde(rename = "activeRequests")]
     active_requests: Vec<ActiveRequestInfo>,
-    #[serde(rename = "errorMessage")]
     error_message: String,
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct ActiveRequestInfo {
-    #[serde(rename = "apiName")]
     api_name: String,
-    #[serde(rename = "apiVersion")]
     api_version: usize,
-    #[serde(rename = "elapsedTime")]
     elapsed_time: usize,
 }
 
