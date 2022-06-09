@@ -1,3 +1,7 @@
+#[cfg(test)]
+#[path = "test_system.rs"]
+mod test_system;
+
 use sysinfo::{NetworkExt, ProcessorExt, System, SystemExt};
 
 /// (used_memory, total_memory) KB
