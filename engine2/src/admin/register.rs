@@ -51,7 +51,6 @@ pub async fn handle(config: args::SystemConfig) -> Result<(), String> {
     let body_bytes = body::to_bytes(resp.into_body()).await.unwrap();
     let info: RegisterResponse = serde_json::from_slice(&body_bytes.to_vec()).unwrap();
 
-    
     // 2. process admin's register's response message
     let id = info.id.clone(); // todo: global variable1
     process_register_response_message(info);
@@ -98,12 +97,11 @@ fn get_system_info() -> (String, usize) {
 }
 
 fn process_register_response_message(info: RegisterResponse) {
-  
-  // todo: global variable!
-  
-  // 1. info.id
-  // 2. info.config
-  
-  // 3. info.api
-  api::insert_apis_into_new_map(info.api);
+    // todo: global variable!
+
+    // 1. info.id
+    // 2. info.config
+
+    // 3. info.api
+    api::insert_apis_into_new_map(info.api);
 }

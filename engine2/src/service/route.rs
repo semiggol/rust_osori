@@ -1,18 +1,16 @@
 use http::{Request, Response};
-use std::{
-    task::{Context, Poll},
-};
+use std::task::{Context, Poll};
 use tower_layer::Layer;
 use tower_service::Service;
 
 #[derive(Debug, Clone)]
 pub struct Route {
-    pub target_servers: Vec<String>
+    pub target_servers: Vec<String>,
 }
 
 pub fn dummy_route() -> Route {
     Route {
-        target_servers: vec!["https://httpbin.org".into()]
+        target_servers: vec!["https://httpbin.org".into()],
     }
 }
 
@@ -31,7 +29,10 @@ impl<S> Layer<S> for RouteLayer {
     type Service = RouteService<S>;
 
     fn layer(&self, inner: S) -> Self::Service {
-        RouteService { inner, route: self.route.clone() }
+        RouteService {
+            inner,
+            route: self.route.clone(),
+        }
     }
 }
 
@@ -42,8 +43,8 @@ pub struct RouteService<S> {
 }
 
 impl<S, ReqBody, ResBody> Service<Request<ReqBody>> for RouteService<S>
-    where
-        S: Service<Request<ReqBody>, Response = Response<ResBody>>,
+where
+    S: Service<Request<ReqBody>, Response = Response<ResBody>>,
 {
     type Response = S::Response;
     type Error = S::Error;
@@ -59,4 +60,3 @@ impl<S, ReqBody, ResBody> Service<Request<ReqBody>> for RouteService<S>
         self.inner.call(req)
     }
 }
-

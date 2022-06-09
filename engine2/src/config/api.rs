@@ -1,9 +1,9 @@
-use std::collections::HashMap;
 use lazy_static::lazy_static;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::RwLock;
 use std::time::Duration;
-use std::sync::atomic::{ AtomicUsize, Ordering };
-use serde::{ Serialize, Deserialize };
 
 // for global api map
 lazy_static! {
@@ -45,16 +45,19 @@ pub struct DeserializedApi {
 #[derive(Debug, Clone)]
 pub struct ManagedApi {
     pub match_prefix: bool,
-    pub de_api: DeserializedApi
+    pub de_api: DeserializedApi,
 }
 
 impl ManagedApi {
     pub fn new(de_api: DeserializedApi) -> Self {
-        let mut m_api = ManagedApi { match_prefix: false, de_api };
+        let mut m_api = ManagedApi {
+            match_prefix: false,
+            de_api,
+        };
         m_api.fix_matchtype_and_remove_asterisk();
         m_api
     }
-    
+
     pub fn get_key(&self) -> String {
         self.de_api.base_path.clone()
     }
@@ -63,23 +66,22 @@ impl ManagedApi {
         // fix match type
         let mut len = self.de_api.base_path.len();
         let mut path = self.de_api.base_path.as_bytes();
-        if path[len-1] == b'*' {
-            // set 
+        if path[len - 1] == b'*' {
+            // set
             self.match_prefix = true;
             // remove '*' in base_path
-            self.de_api.base_path = self.de_api.base_path[0..len-1].to_string();
-            
+            self.de_api.base_path = self.de_api.base_path[0..len - 1].to_string();
+
             // ToDo: how to process '*'?
             len = self.de_api.target_path.len();
             path = self.de_api.target_path.as_bytes();
-            if path[len-1] == b'*' {
+            if path[len - 1] == b'*' {
                 // remove '*' in target_path
-                self.de_api.target_path = self.de_api.target_path[0..len-1].to_string();
+                self.de_api.target_path = self.de_api.target_path[0..len - 1].to_string();
             }
         }
     }
 }
-
 
 #[derive(Debug, Clone)]
 pub struct Map {
@@ -97,7 +99,7 @@ impl Map {
             prefix_match,
         }
     }
-    
+
     // find api
     pub fn find(&self, method: &str, uri: &str) -> Option<ManagedApi> {
         // 1. get from exact map
@@ -110,8 +112,8 @@ impl Map {
                         return Some(m_api.clone());
                     }
                 }
-            },
-            None => {},
+            }
+            None => {}
         };
 
         // 2. get from prefix map ..
@@ -128,7 +130,7 @@ impl Map {
                         if method.eq(api_method) {
                             // ToDo: need to deep copy?
                             let mut found_api = m_api.clone();
-                            let remaining_uri = &uri[prefix_len-1..];
+                            let remaining_uri = &uri[prefix_len - 1..];
                             found_api.de_api.target_path.push_str(remaining_uri);
 
                             // target_path has been changed! -> use target_path for proxy request
@@ -152,7 +154,7 @@ impl Map {
     // private: insert new api: ToDo: protocol에 사용되는 구조체와 분리 방안
     fn insert(&mut self, mut de_api: DeserializedApi) {
         let m_api = ManagedApi::new(de_api);
-        
+
         println!("\nAPI.MAP.Insert => {:?}", m_api);
         if m_api.match_prefix {
             self.prefix_match.push(m_api);
@@ -161,34 +163,42 @@ impl Map {
             self.exact_match.insert(key, m_api);
         }
     }
-
 }
 
 ///! find_api_by_reqline
 pub fn find_api_by_reqline(method: &str, uri: &str) -> Option<ManagedApi> {
     let view = get_gloval_view();
-    println!("find_api_by_uri: uri={}, view={} (0.left, 1.right)", uri, view);
-    if view == 0 { // from LEFT map
+    println!(
+        "find_api_by_uri: uri={}, view={} (0.left, 1.right)",
+        uri, view
+    );
+    if view == 0 {
+        // from LEFT map
         GLOBAL_API_MAP_LEFT.read().unwrap().find(method, uri)
-    } else { // from RIGHT map
+    } else {
+        // from RIGHT map
         GLOBAL_API_MAP_RIGHT.read().unwrap().find(method, uri)
     }
 }
 
 fn clear_old_map() {
     let view = get_gloval_view();
-    if view == 0 { // left
+    if view == 0 {
+        // left
         GLOBAL_API_MAP_RIGHT.write().unwrap().clear();
-    } else {       // right
+    } else {
+        // right
         GLOBAL_API_MAP_LEFT.write().unwrap().clear();
     }
 }
 
 fn insert_api_into_new_map(api: DeserializedApi) {
     let view = get_gloval_view();
-    if view == 0 { // left
+    if view == 0 {
+        // left
         GLOBAL_API_MAP_RIGHT.write().unwrap().insert(api);
-    } else {       // right
+    } else {
+        // right
         GLOBAL_API_MAP_LEFT.write().unwrap().insert(api);
     }
 }
@@ -260,7 +270,6 @@ pub async fn test_update_apis() {
 
     // sleep 3 seconds.
     std::thread::sleep(Duration::from_millis(3000));
-    
 }
 
 // Todo: remove this after test
@@ -273,7 +282,7 @@ pub async fn test_find_apis() {
     match found_api {
         Some(api) => {
             println!("Found! > {:?}", api);
-        },
+        }
         None => {
             println!("Not found!> /v1/test ");
         }
@@ -283,7 +292,7 @@ pub async fn test_find_apis() {
     match found_api {
         Some(api) => {
             println!("Found! > {:?}", api);
-        },
+        }
         None => {
             println!("Not found!> /v2/naver/favicon.ico ");
         }

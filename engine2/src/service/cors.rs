@@ -1,15 +1,15 @@
-use http::{HeaderValue, Request, Response};
-use std::{
-    task::{Context, Poll},
+use crate::service::access_log::AccessLogResponseBody;
+use futures_util::ready;
+use http::header::{
+    ACCESS_CONTROL_ALLOW_HEADERS, ACCESS_CONTROL_ALLOW_METHODS, ACCESS_CONTROL_ALLOW_ORIGIN,
 };
+use http::{HeaderValue, Request, Response};
+use pin_project::pin_project;
 use std::future::Future;
 use std::pin::Pin;
+use std::task::{Context, Poll};
 use tower_layer::Layer;
 use tower_service::Service;
-use pin_project::pin_project;
-use futures_util::ready;
-use http::header::{ACCESS_CONTROL_ALLOW_HEADERS, ACCESS_CONTROL_ALLOW_METHODS, ACCESS_CONTROL_ALLOW_ORIGIN};
-use crate::service::access_log::AccessLogResponseBody;
 
 #[derive(Debug, Clone)]
 pub struct CorsLayer;
@@ -28,8 +28,8 @@ pub struct CorsService<S> {
 }
 
 impl<S, ReqBody, ResBody> Service<Request<ReqBody>> for CorsService<S>
-    where
-        S: Service<Request<ReqBody>, Response = Response<ResBody>>,
+where
+    S: Service<Request<ReqBody>, Response = Response<ResBody>>,
 {
     type Response = S::Response;
     type Error = S::Error;
@@ -53,17 +53,23 @@ pub struct ResponseFuture<F> {
 }
 
 impl<F, B, E> Future for ResponseFuture<F>
-    where
-        F: Future<Output = Result<Response<B>, E>>,
+where
+    F: Future<Output = Result<Response<B>, E>>,
 {
     type Output = F::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.project();
         let mut response = ready!(this.inner.poll(cx)?);
-        response.headers_mut().insert(ACCESS_CONTROL_ALLOW_ORIGIN, HeaderValue::from_static("*"));
-        response.headers_mut().insert(ACCESS_CONTROL_ALLOW_HEADERS, HeaderValue::from_static("*"));
-        response.headers_mut().insert(ACCESS_CONTROL_ALLOW_METHODS, HeaderValue::from_static("*"));
+        response
+            .headers_mut()
+            .insert(ACCESS_CONTROL_ALLOW_ORIGIN, HeaderValue::from_static("*"));
+        response
+            .headers_mut()
+            .insert(ACCESS_CONTROL_ALLOW_HEADERS, HeaderValue::from_static("*"));
+        response
+            .headers_mut()
+            .insert(ACCESS_CONTROL_ALLOW_METHODS, HeaderValue::from_static("*"));
 
         Poll::Ready(Ok(response))
     }

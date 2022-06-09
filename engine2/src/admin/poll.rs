@@ -1,13 +1,13 @@
-use crate::{monitor, config};
-use crate::admin::register::{ RegisterResponse };
-use tokio::{task, time};
-use std::time::{Duration, UNIX_EPOCH};
-use hyper::client::HttpConnector;
-use hyper::{ Client, Request, Method, Body, body, StatusCode };
-use std::time::SystemTime;
-use monitor::system::{ get_memory_usage, get_network_usage, get_cpu_usage };
-use serde::{ Serialize, Deserialize };
+use crate::admin::register::RegisterResponse;
 use crate::config::api;
+use crate::{config, monitor};
+use hyper::client::HttpConnector;
+use hyper::{body, Body, Client, Method, Request, StatusCode};
+use monitor::system::{get_cpu_usage, get_memory_usage, get_network_usage};
+use serde::{Deserialize, Serialize};
+use std::time::SystemTime;
+use std::time::{Duration, UNIX_EPOCH};
+use tokio::{task, time};
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -44,7 +44,7 @@ struct PollResponse {
 }
 
 pub fn handle(client: Client<HttpConnector>, id: String) {
-    task::spawn( async move {
+    task::spawn(async move {
         // interval
         let mut interval = time::interval(Duration::from_secs(5));
         loop {
@@ -65,7 +65,7 @@ struct MonitoringInfo {
 }
 
 fn get_monitoring_info() -> MonitoringInfo {
-    use sysinfo::{ System, SystemExt };
+    use sysinfo::{System, SystemExt};
 
     // monitoring info
     let mut my_system = System::new_all();
@@ -84,7 +84,7 @@ fn get_monitoring_info() -> MonitoringInfo {
         memory_usage_total,
         network_usage_in,
         network_usage_out,
-        cpu_usage
+        cpu_usage,
     }
 }
 
@@ -123,13 +123,12 @@ async fn send_poll_msg(body: String, client: Client<HttpConnector>) -> Result<()
         .method(Method::POST)
         .uri("http://118.67.135.216:5581/poll")
         .header("content-type", "application/json")
-        .body(Body::from(body)).unwrap();
+        .body(Body::from(body))
+        .unwrap();
 
     let resp = match client.request(req).await {
-        Ok(resp)  => resp,
-        Err(e) => {
-            return Err(e.message().to_string())
-        }
+        Ok(resp) => resp,
+        Err(e) => return Err(e.message().to_string()),
     };
 
     if resp.status() != StatusCode::OK {
@@ -149,14 +148,11 @@ async fn send_poll_msg(body: String, client: Client<HttpConnector>) -> Result<()
 fn process_admin_message(info: PollResponse) {
     if info.action.eq("api") {
         api::insert_apis_into_new_map(info.api);
-    }
-    else if info.action.eq("config") {
+    } else if info.action.eq("config") {
         // ToDo: 없어짐 ^^
-    }
-    else if info.action.eq("shutdown") {
+    } else if info.action.eq("shutdown") {
         // ToDo:
-    }
-    else if info.action.eq("restart") {
+    } else if info.action.eq("restart") {
         // ToDo:
     }
 }

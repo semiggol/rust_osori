@@ -1,25 +1,24 @@
+use bytes::Buf;
+use futures_util::ready;
 use http::{HeaderMap, Request, Response};
 use http_body::Body;
 use pin_project::pin_project;
+use std::sync::atomic::{AtomicI64, Ordering};
+use std::sync::Arc;
 use std::{
     future::Future,
     pin::Pin,
     task::{Context, Poll},
 };
-use std::sync::Arc;
-use std::sync::atomic::{AtomicI64, Ordering};
 use tower_layer::Layer;
 use tower_service::Service;
-use futures_util::ready;
-use bytes::Buf;
 
 #[derive(Debug, Clone, Copy)]
-pub struct AccessLogLayer {
-}
+pub struct AccessLogLayer {}
 
 impl AccessLogLayer {
     pub fn new() -> Self {
-        AccessLogLayer { }
+        AccessLogLayer {}
     }
 }
 
@@ -47,8 +46,8 @@ impl<S> AccessLog<S> {
 }
 
 impl<S, ReqBody, ResBody> Service<Request<ReqBody>> for AccessLog<S>
-    where
-        S: Service<Request<AccessLogRequestBody<ReqBody>>, Response = Response<ResBody>>,
+where
+    S: Service<Request<AccessLogRequestBody<ReqBody>>, Response = Response<ResBody>>,
 {
     type Response = Response<AccessLogResponseBody<ResBody>>;
     type Error = S::Error;
@@ -67,8 +66,8 @@ impl<S, ReqBody, ResBody> Service<Request<ReqBody>> for AccessLog<S>
             })),
             metric: Some(Metric {
                 id: 1,
-                response_size: 0
-            })
+                response_size: 0,
+            }),
         }
     }
 }
@@ -81,8 +80,8 @@ pub struct ResponseFuture<F> {
 }
 
 impl<F, B, E> Future for ResponseFuture<F>
-    where
-        F: Future<Output = Result<Response<B>, E>>,
+where
+    F: Future<Output = Result<Response<B>, E>>,
 {
     type Output = Result<Response<AccessLogResponseBody<B>>, E>;
 
@@ -90,7 +89,9 @@ impl<F, B, E> Future for ResponseFuture<F>
         let this = self.project();
         let mut response = ready!(this.inner.poll(cx)?);
         let mut metric = this.metric.take().unwrap();
-        Poll::Ready(Ok(response.map(|inner| AccessLogResponseBody { inner, metric })))
+        Poll::Ready(Ok(
+            response.map(|inner| AccessLogResponseBody { inner, metric })
+        ))
     }
 }
 
@@ -102,8 +103,8 @@ pub struct AccessLogRequestBody<B> {
 }
 
 impl<B> Body for AccessLogRequestBody<B>
-    where
-        B: Body,
+where
+    B: Body,
 {
     type Data = B::Data;
 
@@ -147,8 +148,8 @@ pub struct AccessLogResponseBody<B> {
 }
 
 impl<B> Body for AccessLogResponseBody<B>
-    where
-        B: Body,
+where
+    B: Body,
 {
     type Data = B::Data;
 

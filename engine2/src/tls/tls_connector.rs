@@ -1,7 +1,6 @@
-
-use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
-use hyper::{Client};
 use hyper::client::HttpConnector;
+use hyper::Client;
+use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 
 pub fn make_http_or_https_client() -> Client<HttpsConnector<HttpConnector>> {
     let https = HttpsConnectorBuilder::new()

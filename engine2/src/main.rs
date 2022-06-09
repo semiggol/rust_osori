@@ -1,17 +1,17 @@
+mod admin;
+mod config;
+mod monitor;
 mod service;
 mod tls;
-mod admin;
-mod monitor;
-mod config;
 
-use hyper::Server;
-use tower::make::Shared;
-use tower::ServiceBuilder;
-use service::route::{ RouteLayer, dummy_route };
-use service::access_log::{AccessLogLayer, AccessLogRequestBody};
-use tls::tls_connector::make_http_or_https_client;
 use crate::service::cors::CorsLayer;
 use crate::service::proxy::ProxyService;
+use hyper::Server;
+use service::access_log::{AccessLogLayer, AccessLogRequestBody};
+use service::route::{dummy_route, RouteLayer};
+use tls::tls_connector::make_http_or_https_client;
+use tower::make::Shared;
+use tower::ServiceBuilder;
 
 #[tokio::main]
 async fn main() {
@@ -24,7 +24,7 @@ async fn main() {
     };
 
     // register to admin
-    if let Err(e)  = admin::register::handle(config).await {
+    if let Err(e) = admin::register::handle(config).await {
         println!("error occurred: {}", e);
         std::process::exit(-1);
     } else {

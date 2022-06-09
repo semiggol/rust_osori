@@ -1,11 +1,11 @@
-use hyper::server::accept::Accept;
-use hyper::server::conn::{AddrIncoming, AddrStream};
 use core::task::{Context, Poll};
 use futures_util::ready;
+use hyper::server::accept::Accept;
+use hyper::server::conn::{AddrIncoming, AddrStream};
+use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::vec::Vec;
-use std::future::Future;
 use std::{fs, io, sync};
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 use tokio_rustls::rustls::ServerConfig;
@@ -25,7 +25,8 @@ pub fn make_tls_config() -> Arc<ServerConfig> {
         .with_safe_defaults()
         .with_no_client_auth()
         .with_single_cert(certs, key)
-        .map_err(|e| error(format!("{}", e))).unwrap();
+        .map_err(|e| error(format!("{}", e)))
+        .unwrap();
     // Configure ALPN to accept HTTP/2, HTTP/1.1 in that order.
     //cfg.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec()]; // Todo: check http2
     cfg.alpn_protocols = vec![b"http/1.1".to_vec()];
@@ -80,7 +81,6 @@ impl AsyncWrite for TlsStream {
         cx: &mut Context<'_>,
         buf: &[u8],
     ) -> Poll<io::Result<usize>> {
-
         let pin = self.get_mut();
         match pin.state {
             State::Handshaking(ref mut accept) => match ready!(Pin::new(accept).poll(cx)) {
@@ -138,7 +138,6 @@ impl Accept for TlsAcceptor {
     }
 }
 
-
 // Load public certificate from file.
 pub fn load_certs(filename: &str) -> io::Result<Vec<rustls::Certificate>> {
     // Open certificate file.
@@ -149,10 +148,7 @@ pub fn load_certs(filename: &str) -> io::Result<Vec<rustls::Certificate>> {
     // Load and return certificate.
     let certs = rustls_pemfile::certs(&mut reader)
         .map_err(|_| error("failed to load certificate".into()))?;
-    Ok(certs
-        .into_iter()
-        .map(rustls::Certificate)
-        .collect())
+    Ok(certs.into_iter().map(rustls::Certificate).collect())
 }
 
 // Load private key from file.

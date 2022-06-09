@@ -1,4 +1,4 @@
-use serde::{ Serialize, Deserialize };
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct SystemConfig {
@@ -28,4 +28,3 @@ pub struct HttpsConfig {
     #[serde(rename = "privateKeyFileName")]
     pub private_key_file_name: String,
 }
-
